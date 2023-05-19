@@ -1,0 +1,335 @@
+---
+title: 'Class06: R Functions'
+author: "Arsam Rostami"
+date: "2023-04-21"
+output: gfm
+---
+
+In this class we will develop our own **R function** to calculate the average grade in a fictional class.
+
+we will start with a simplified version of the problem, Just calculating the average grade of one student.
+
+# Grades of Students
+
+An example model is given using three students with different scores obtained for 8 homeworks to achieve `mean ()` and lowest score dropped through created **function**.
+
+```{r}
+# Example input vectors to start with
+
+student1 <- c(100, 100, 100, 100, 100, 100, 100, 90)
+student2 <- c(100, NA, 90, 90, 90, 90, 97, 80)
+student3 <- c(90, NA, NA, NA, NA, NA, NA, NA)
+
+```
+
+We are going to start by calculating the [**average scores**]{.underline} of the homework using `mean()`.
+
+```{r}
+# To find the average grade of student1 without dropping the lowest score
+
+mean(student1)
+```
+
+To get the minimum score of something we can use `which.min` giving the placement of the lowest score.
+
+```{r}
+# using which.min to find the placement of the lowest score at the 8th postion
+
+student1
+which.min(student1)
+```
+
+[**FIRST**]{.underline}, we can do the average of the first 7 using `[1:7]` homework scores:
+
+```{r}
+# One way to create a code using [1:7] to calculate only first 7 scores
+
+mean(student1[1:7])
+```
+
+[SECOND]{.underline} way to do this:
+
+```{r}
+# using minus for the placement score will not count the 8th score
+
+student1[1:7]
+student1[-8]
+```
+
+### HOWEVER...
+
+[THIRD]{.underline} way to drop the lowest score is going to be more efficient and not reliant of the score position:
+
+```{r}
+#use -which.min to drop the lowest score and set it to student1_drop_lowest
+
+student1_drop_lowest = student1[-which.min(student1)]
+student1_drop_lowest
+```
+
+I can get the mean of the homework scores by the dropping the lowest scores by doing `mean(student1_drop_lowest)`
+
+```{r}
+# Use the mean() on student1_drop_lowest
+
+mean(student1_drop_lowest)
+```
+
+We have our first working snippet code!
+
+### Now lets try to do this for student2:
+
+```{r}
+# use -which.min and set the score to student2_drop_lowest
+
+student2 <- c(100, NA, 90, 90, 90, 90, 97, 80)
+student2_drop_lowest = student2[-which.min(student2)]
+student2_drop_lowest
+
+```
+
+[***Note***]{.underline}**:** this code only dropped the numerical value for the minimum
+
+There is a way to calculate the mean dropping missing values **(or NA).** Use `na.rm=TRUE`
+
+```{r}
+#since there are more NA use na.rm
+
+student2 <- c(100, NA, 90, 90, 90, 90, 97, 80)
+mean(student2, na.rm=TRUE)
+```
+
+## However, for student 3...
+
+```{r}
+#set na.rm to TRUE and take the mean of student3
+
+student3 <- c(90, NA, NA, NA, NA, NA, NA, NA)
+mean(student3, na.rm = TRUE)
+```
+
+We want to know the positions of the **NA's**. So, for the Student2 we can use the following.
+
+```{r}
+# Use which with is.na to identify the placement of NA
+
+student2 <- c(100, NA, 90, 90, 90, 90, 97, 80)
+which(is.na(student2))
+```
+
+[**NOTE**]{.underline}**:** these are logical vectors giving the potion of the NA
+
+For student 3:
+
+```{r}
+# Use which with is.na to identify the placement of NA
+
+student3 <- c(90, NA, NA, NA, NA, NA, NA, NA)
+which(is.na(student3))
+```
+
+For considering the missing values we can mask the NA values with zeros.
+
+```{r}
+# Mask all the NA values with zeros setting is.na value assign to 0
+
+student2 <- c(100, NA, 90, 90, 90, 90, 97, 80)
+
+student2[is.na(student2)] <- 0
+student2
+```
+
+For student 3:
+
+```{r}
+# Set similar parameters for student3 using is.na set to 0
+
+student3[is.na(student3)] <- 0
+student3
+```
+
+Finding the `mean()` for student3:
+
+```{r}
+# Find mean student3
+
+mean(student3)
+```
+
+This is going to be our final working snippet of code for all the students (with or without NA)
+
+```{r}
+student3 <- c(90, NA, NA, NA, NA, NA, NA, NA)
+student3[is.na(student3)] <- 0
+student3_drop_lowest = student3[-which.min(student3)]
+mean(student3_drop_lowest)
+```
+
+## *Let's built an example function now:*
+
+```{r}
+x <- c(100,75,50,NA)
+x[is.na(x)] <- 0
+x_dro_lowest <- x[-which.min(x)]
+mean(x_dro_lowest)
+```
+
+# FUNCTION grade()
+
+We can write it as function:
+
+```{r}
+#' Calculate the average score for a vector
+#' of homework scores, dropping the lowest
+#' score, and considering NA values as zero
+#'
+#' @param x A numeric vector of homework
+#' scores
+#'
+#' @return The average value of homework
+#' scores
+#' @export
+#'
+#' @examples
+#' 
+#' student1 <- c('100,'50', NA)
+#' grade(student)
+#' 
+grade <- function(x){
+   # we are masking the values from NA to 0
+   x[is.na(x)] <- 0
+   # Drop the lowest score
+   x_dro_lowest <- x[-which.min(x)]
+   mean(x_dro_lowest)
+}
+```
+
+Let's apply the `function (x)` that is set to `grade` and now w can calculate each students [*average grade with lowest score dropped*]{.underline}
+
+```{r}
+student1 <- c(100, 100, 100, 100, 100, 100, 100, 90)
+student2 <- c(100, NA, 90, 90, 90, 90, 97, 80)
+student3 <- c(90, NA, NA, NA, NA, NA, NA, NA)
+
+grade(student1)
+grade(student2)
+grade(student3)
+```
+
+# Gradebook From URL
+
+Lets apply our **function** to a gradebook from this `URL`: <https://tinyurl.com/gradeinput>
+
+```{r}
+URL <- 'https://tinyurl.com/gradeinput'
+gradebook <- read.csv(URL, row.names = 1)
+
+```
+
+Lets apply my fucntion `grade` to the gradebook using `apply` and running it by `rows` using `MARGIN=1`
+
+#### **Q1.** Write a function grade() to determine an overall grade from a vector of student homework assignment scores dropping the lowest single score.
+
+```{r}
+# Use apply() function on gradebook to identify grade
+
+apply(gradebook, 1, grade)
+```
+
+#### **Q2.** Using your grade() function and the supplied gradebook, Who is the top scoring student overall in the gradebook?
+
+```{r}
+# Use max with apply on the gradebook to identify which score is the highest
+
+max(apply(gradebook, 1, grade))
+```
+
+the maximum score is 94.5.
+
+```{r}
+# Use which.max to identify the student with highest score
+
+which.max(apply(gradebook, 1, grade))
+```
+
+The student who achieved the highest score was `student-18`
+
+#### **Q3.** From your analysis of the gradebook, which homework was toughest on students (i.e. obtained the lowest scores overall?
+
+First we are going to mask the NA
+
+```{r}
+# Mask NA with is.na set to zero
+
+gradebook[is.na(gradebook)] <- 0
+
+```
+
+**NOTE:** This the value without the NA considered as a numeric value
+
+Now, we apply the `mean` function to the gradebook.
+
+```{r}
+# Use apply function on gradebook
+
+apply(gradebook, 2, mean)
+```
+
+The toughest homework will be hw2 considering the mean, and considering missing homework considered as zero
+
+Maybe having zero values for the NA values are not a good representation model to indicate the difficulty of the homework
+
+One thing we can do is to remove the missing values.
+
+```{r}
+gradebook <- read.csv(URL, row.names = 1)
+apply(gradebook, 2, mean, na.rm = TRUE)
+```
+
+Now based on the turned in assignments, and reconsidering the missing values (NA) as outliers, the toughest homework will be hw3 (according to the mean).
+
+If we use the `median` instead of the mean as a measure of overall score...
+
+```{r}
+# Set NA prameters na.rm = TRUE and apply function
+apply(gradebook, 2, median, na.rm = TRUE)
+```
+
+If we use some plots...
+
+```{r}
+# create a bxplot based on gradebook URL
+boxplot(gradebook, col = "pink")
+```
+
+#### **Q4.** From your analysis of the gradebook, which homework was most predictive of overall score (i.e. highest correlation with average grade score)?
+
+If we want to calculate the correlation of grades, we first need the `overall_grades`
+
+```{r}
+# set the apply() parameters to overall_grades
+overall_grades = apply(gradebook, 1, grade)
+```
+
+```{r}
+# correlation value for homework1
+
+cor(gradebook$hw1, overall_grades)
+```
+
+```{r}
+# correlation value for all homeworks having 2 values
+
+gradebook[is.na(gradebook)] <- 0
+apply(gradebook, 2, cor, y= overall_grades)
+```
+
+The maximum value is...
+
+```{r}
+# Use which.max with apply key to identify MAX value for hw?
+
+which.max(apply(gradebook, 2, cor, y= overall_grades))
+```
+
+Based on the `which.max` value hw5 was the highest correlation score to the `mean`
