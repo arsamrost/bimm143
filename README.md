@@ -1,2 +1,2 @@
-# BIMM143
-Bioinformatics class
+# bimm143
+Bioinformatics class (Super Fun)
