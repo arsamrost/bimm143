@@ -2,7 +2,7 @@
 title: 'Class06: R Functions'
 author: "Arsam Rostami"
 date: "2023-04-21"
-output: gfm
+format: gfm
 ---
 
 In this class we will develop our own **R function** to calculate the average grade in a fictional class.
