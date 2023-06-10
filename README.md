@@ -1,5 +1,7 @@
-# Memoirs Jekyll Theme
+# Classwork
+ This page contains my classwork form BIMM 143: Bioinformatics 
+Bioinformatics class (Super Fun)
+But it can be hard sometimes!
 
-[Live Demo](https://wowthemesnet.github.io/jekyll-theme-memoirs/) | [Docs & Download](https://bootstrapstarter.com/jekyll-theme-memoirs/) |  [Buy me a coffee](https://www.wowthemes.net/donate/)
-
-![memoirs](https://bootstrapstarter.com/assets/img/themes/memoirs-jekyll.jpg)
+## Content
+-  Class 5: [Data exploration and visulaization in R](https://github.com/arsamrost/bimm143/blob/main/Class06/Untitled.md)
