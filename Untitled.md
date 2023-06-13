@@ -1,779 +1,1166 @@
-Class 8: Mini Lab Cancer
+Class 12 Lab: Transcriptomics and the analysis of RNA-Seq data
 ================
 Arsam Rostami
+05/12/2023
 
-## Preparing the data
+## 1. Bioconductor and DESeq2 setup
 
-For this we can use the `read.csv()` function to read the CSV
-(comma-separated values) file containing the data 
+<u>**Bioconductor packages**</u> are installed differently than
+“regular” R packages from CRAN. To install the core Bioconductor
+packages, copy and paste the following two lines of code into your **R
+console** one at a time.
 
 ``` r
-# Save your input data file into your Project directory using WisconsinCancer.csv
-
-fna.data <- "WisconsinCancer.csv"
-
-# Complete the following code to input the data and store as wisc.df and use row.names() command 
-
-wisc.df <- read.csv(fna.data, row.names=1)
+# install.packages("BiocManager")
+# BiocManager::install()
 ```
 
-Examine your input data with the use of `id` and `diagnosis` column. we
-can use the `View()` or `head ()` function in next columns
+Load up the packages using the library function:
 
 ``` r
-# using the wisc.df command pull the data up
-head(wisc.df)
+# Load BiocManager library
+library(BiocManager)
 ```
 
-             diagnosis radius_mean texture_mean perimeter_mean area_mean
-    842302           M       17.99        10.38         122.80    1001.0
-    842517           M       20.57        17.77         132.90    1326.0
-    84300903         M       19.69        21.25         130.00    1203.0
-    84348301         M       11.42        20.38          77.58     386.1
-    84358402         M       20.29        14.34         135.10    1297.0
-    843786           M       12.45        15.70          82.57     477.1
-             smoothness_mean compactness_mean concavity_mean concave.points_mean
-    842302           0.11840          0.27760         0.3001             0.14710
-    842517           0.08474          0.07864         0.0869             0.07017
-    84300903         0.10960          0.15990         0.1974             0.12790
-    84348301         0.14250          0.28390         0.2414             0.10520
-    84358402         0.10030          0.13280         0.1980             0.10430
-    843786           0.12780          0.17000         0.1578             0.08089
-             symmetry_mean fractal_dimension_mean radius_se texture_se perimeter_se
-    842302          0.2419                0.07871    1.0950     0.9053        8.589
-    842517          0.1812                0.05667    0.5435     0.7339        3.398
-    84300903        0.2069                0.05999    0.7456     0.7869        4.585
-    84348301        0.2597                0.09744    0.4956     1.1560        3.445
-    84358402        0.1809                0.05883    0.7572     0.7813        5.438
-    843786          0.2087                0.07613    0.3345     0.8902        2.217
-             area_se smoothness_se compactness_se concavity_se concave.points_se
-    842302    153.40      0.006399        0.04904      0.05373           0.01587
-    842517     74.08      0.005225        0.01308      0.01860           0.01340
-    84300903   94.03      0.006150        0.04006      0.03832           0.02058
-    84348301   27.23      0.009110        0.07458      0.05661           0.01867
-    84358402   94.44      0.011490        0.02461      0.05688           0.01885
-    843786     27.19      0.007510        0.03345      0.03672           0.01137
-             symmetry_se fractal_dimension_se radius_worst texture_worst
-    842302       0.03003             0.006193        25.38         17.33
-    842517       0.01389             0.003532        24.99         23.41
-    84300903     0.02250             0.004571        23.57         25.53
-    84348301     0.05963             0.009208        14.91         26.50
-    84358402     0.01756             0.005115        22.54         16.67
-    843786       0.02165             0.005082        15.47         23.75
-             perimeter_worst area_worst smoothness_worst compactness_worst
-    842302            184.60     2019.0           0.1622            0.6656
-    842517            158.80     1956.0           0.1238            0.1866
-    84300903          152.50     1709.0           0.1444            0.4245
-    84348301           98.87      567.7           0.2098            0.8663
-    84358402          152.20     1575.0           0.1374            0.2050
-    843786            103.40      741.6           0.1791            0.5249
-             concavity_worst concave.points_worst symmetry_worst
-    842302            0.7119               0.2654         0.4601
-    842517            0.2416               0.1860         0.2750
-    84300903          0.4504               0.2430         0.3613
-    84348301          0.6869               0.2575         0.6638
-    84358402          0.4000               0.1625         0.2364
-    843786            0.5355               0.1741         0.3985
-             fractal_dimension_worst
-    842302                   0.11890
-    842517                   0.08902
-    84300903                 0.08758
-    84348301                 0.17300
-    84358402                 0.07678
-    843786                   0.12440
-
-The first column is the `wisc.df$diagnosis` to determine which cell
-samples are malignant or benign
+    Bioconductor version '3.16' is out-of-date; the current release version '3.17'
+      is available with R version '4.3'; see https://bioconductor.org/install
 
 ``` r
-# We can use -1 here to remove the first column
-wisc.data <- wisc.df[,-1]
+# Load DESeq2 library
+library(DESeq2)
 ```
 
-setup a separate new vector called `diagnosis` from the original data
-set
+    Loading required package: S4Vectors
+
+    Loading required package: stats4
+
+    Loading required package: BiocGenerics
+
+
+    Attaching package: 'BiocGenerics'
+
+    The following objects are masked from 'package:stats':
+
+        IQR, mad, sd, var, xtabs
+
+    The following objects are masked from 'package:base':
+
+        anyDuplicated, aperm, append, as.data.frame, basename, cbind,
+        colnames, dirname, do.call, duplicated, eval, evalq, Filter, Find,
+        get, grep, grepl, intersect, is.unsorted, lapply, Map, mapply,
+        match, mget, order, paste, pmax, pmax.int, pmin, pmin.int,
+        Position, rank, rbind, Reduce, rownames, sapply, setdiff, sort,
+        table, tapply, union, unique, unsplit, which.max, which.min
+
+
+    Attaching package: 'S4Vectors'
+
+    The following objects are masked from 'package:base':
+
+        expand.grid, I, unname
+
+    Loading required package: IRanges
+
+    Loading required package: GenomicRanges
+
+    Loading required package: GenomeInfoDb
+
+    Loading required package: SummarizedExperiment
+
+    Loading required package: MatrixGenerics
+
+    Loading required package: matrixStats
+
+
+    Attaching package: 'MatrixGenerics'
+
+    The following objects are masked from 'package:matrixStats':
+
+        colAlls, colAnyNAs, colAnys, colAvgsPerRowSet, colCollapse,
+        colCounts, colCummaxs, colCummins, colCumprods, colCumsums,
+        colDiffs, colIQRDiffs, colIQRs, colLogSumExps, colMadDiffs,
+        colMads, colMaxs, colMeans2, colMedians, colMins, colOrderStats,
+        colProds, colQuantiles, colRanges, colRanks, colSdDiffs, colSds,
+        colSums2, colTabulates, colVarDiffs, colVars, colWeightedMads,
+        colWeightedMeans, colWeightedMedians, colWeightedSds,
+        colWeightedVars, rowAlls, rowAnyNAs, rowAnys, rowAvgsPerColSet,
+        rowCollapse, rowCounts, rowCummaxs, rowCummins, rowCumprods,
+        rowCumsums, rowDiffs, rowIQRDiffs, rowIQRs, rowLogSumExps,
+        rowMadDiffs, rowMads, rowMaxs, rowMeans2, rowMedians, rowMins,
+        rowOrderStats, rowProds, rowQuantiles, rowRanges, rowRanks,
+        rowSdDiffs, rowSds, rowSums2, rowTabulates, rowVarDiffs, rowVars,
+        rowWeightedMads, rowWeightedMeans, rowWeightedMedians,
+        rowWeightedSds, rowWeightedVars
+
+    Loading required package: Biobase
+
+    Welcome to Bioconductor
+
+        Vignettes contain introductory material; view with
+        'browseVignettes()'. To cite Bioconductor, see
+        'citation("Biobase")', and for packages 'citation("pkgname")'.
+
+
+    Attaching package: 'Biobase'
+
+    The following object is masked from 'package:MatrixGenerics':
+
+        rowMedians
+
+    The following objects are masked from 'package:matrixStats':
+
+        anyMissing, rowMedians
+
+If this finished without yielding obvious error messages we can install
+the **DESeq2** bioconductor package that we will use in this class:
 
 ``` r
-# Create diagnosis vector for later 
-diagnosis <- wisc.df[,1]
+# For this class, you'll also need DESeq2:
+# BiocManager::install("DESeq2")
 ```
 
-## Exploratory data analysis
+### DESeq2 Required Inputs
 
-Explore the data you created before (`wisc.data` and `diagnosis`) to
-answer the following questions:
+As input, the DESeq2 package expects (**1**) a data.frame of **count
+data** (as obtained from RNA-seq or another high-throughput sequencing
+experiment) and (**2**) a second data.frame with information about the
+samples - often called sample metadata (or `colData` in DESeq2-speak
+because it supplies metadata/information about the columns of the
+countData matrix).  
 
-**Q1**. How many observations are in this data set?
+# 2. Import countData and colData
+
+Begin a new R script and use the **read.csv()** function to read these
+count data and metadata files.
 
 ``` r
-# Use nrow command to determine the number of Obs. from wisc.df
+# Read your csv files into R
+counts <- read.csv("airway_scaledcounts.csv", row.names=1)
+metadata <-  read.csv("airway_metadata.csv")
 
-nrow(wisc.df)
+# Now you can use 'counts' and 'metadata' in your analysis
 ```
 
-    [1] 569
-
--   Using `nrow()` command we can determine that there is **569
-    observations**
-
-**Q2**. How many of the observations have a malignant diagnosis?
+Now, take a look at each.
 
 ``` r
-# Load the data (replace "wisc.df" with the name of your data frame)
-# Use table command on wis.df$diagnosis to pull the malignant and benign 
-table(wisc.df$diagnosis)
+# Display the first few elements counts
+head(counts)
 ```
 
-
-      B   M 
-    357 212 
+                    SRR1039508 SRR1039509 SRR1039512 SRR1039513 SRR1039516
+    ENSG00000000003        723        486        904        445       1170
+    ENSG00000000005          0          0          0          0          0
+    ENSG00000000419        467        523        616        371        582
+    ENSG00000000457        347        258        364        237        318
+    ENSG00000000460         96         81         73         66        118
+    ENSG00000000938          0          0          1          0          2
+                    SRR1039517 SRR1039520 SRR1039521
+    ENSG00000000003       1097        806        604
+    ENSG00000000005          0          0          0
+    ENSG00000000419        781        417        509
+    ENSG00000000457        447        330        324
+    ENSG00000000460         94        102         74
+    ENSG00000000938          0          0          0
 
 ``` r
-# Create a new variable "diagnosis" containing the diagnosis column from the data frame
-diagnosis<- wisc.df$diagnosis
-
-# Remove the diagnosis column from the original data frame
-wisc.df<- wisc.df[,-1]
+# Display the first few rows of the data frame form metadata
+head(metadata)
 ```
 
--   Based on the `table()` command using `wisc.df$diagnosis` the is
-    **357 benign** and **212 malignant** cells
+              id     dex celltype     geo_id
+    1 SRR1039508 control   N61311 GSM1275862
+    2 SRR1039509 treated   N61311 GSM1275863
+    3 SRR1039512 control  N052611 GSM1275866
+    4 SRR1039513 treated  N052611 GSM1275867
+    5 SRR1039516 control  N080611 GSM1275870
+    6 SRR1039517 treated  N080611 GSM1275871
 
-**Q3**. How many variables/features in the data are suffixed
-with `_mean`?
-
-``` r
-# use the length command and grep to pull the "_mean" and identify the colnames 
-
-length(grep("_mean", colnames(wisc.df)))
-```
-
-    [1] 10
-
--   There are **10 variables** in the data when using `_mean` as a set
-    parameter
-
-# 2. Principal Component Analysis
-
-## Performing PCA
-
-The next step in your analysis is to perform principal component
-analysis (PCA) on `wisc.data`
-
-Check for the mean and std for the `wisc.data`, and will be using
-`colMeans()` and `apply()`
+Use the **View()** function to view the entire object.
 
 ``` r
-# Check column means and standard deviations
-colMeans(wisc.data)
-```
-
-                radius_mean            texture_mean          perimeter_mean 
-               1.412729e+01            1.928965e+01            9.196903e+01 
-                  area_mean         smoothness_mean        compactness_mean 
-               6.548891e+02            9.636028e-02            1.043410e-01 
-             concavity_mean     concave.points_mean           symmetry_mean 
-               8.879932e-02            4.891915e-02            1.811619e-01 
-     fractal_dimension_mean               radius_se              texture_se 
-               6.279761e-02            4.051721e-01            1.216853e+00 
-               perimeter_se                 area_se           smoothness_se 
-               2.866059e+00            4.033708e+01            7.040979e-03 
-             compactness_se            concavity_se       concave.points_se 
-               2.547814e-02            3.189372e-02            1.179614e-02 
-                symmetry_se    fractal_dimension_se            radius_worst 
-               2.054230e-02            3.794904e-03            1.626919e+01 
-              texture_worst         perimeter_worst              area_worst 
-               2.567722e+01            1.072612e+02            8.805831e+02 
-           smoothness_worst       compactness_worst         concavity_worst 
-               1.323686e-01            2.542650e-01            2.721885e-01 
-       concave.points_worst          symmetry_worst fractal_dimension_worst 
-               1.146062e-01            2.900756e-01            8.394582e-02 
-
-``` r
-# Use the apply function to calculate the standard deviation for each column in the data frame
-apply(wisc.data,2,sd)
-```
-
-                radius_mean            texture_mean          perimeter_mean 
-               3.524049e+00            4.301036e+00            2.429898e+01 
-                  area_mean         smoothness_mean        compactness_mean 
-               3.519141e+02            1.406413e-02            5.281276e-02 
-             concavity_mean     concave.points_mean           symmetry_mean 
-               7.971981e-02            3.880284e-02            2.741428e-02 
-     fractal_dimension_mean               radius_se              texture_se 
-               7.060363e-03            2.773127e-01            5.516484e-01 
-               perimeter_se                 area_se           smoothness_se 
-               2.021855e+00            4.549101e+01            3.002518e-03 
-             compactness_se            concavity_se       concave.points_se 
-               1.790818e-02            3.018606e-02            6.170285e-03 
-                symmetry_se    fractal_dimension_se            radius_worst 
-               8.266372e-03            2.646071e-03            4.833242e+00 
-              texture_worst         perimeter_worst              area_worst 
-               6.146258e+00            3.360254e+01            5.693570e+02 
-           smoothness_worst       compactness_worst         concavity_worst 
-               2.283243e-02            1.573365e-01            2.086243e-01 
-       concave.points_worst          symmetry_worst fractal_dimension_worst 
-               6.573234e-02            6.186747e-02            1.806127e-02 
-
-Use `prcomp()` function on the `wisc.data`, scaling if appropriate
-output model to `wisc.pr`.
-
-``` r
-# Perform PCA on wisc.data by completing the following code
-wisc.pr <- prcomp( wisc.data, scale=T)
-```
-
-Inspect a summary of the results with the `summary()` function.
-
-``` r
-# Look at summary of results
-summary(wisc.pr)
-```
-
-    Importance of components:
-                              PC1    PC2     PC3     PC4     PC5     PC6     PC7
-    Standard deviation     3.6444 2.3857 1.67867 1.40735 1.28403 1.09880 0.82172
-    Proportion of Variance 0.4427 0.1897 0.09393 0.06602 0.05496 0.04025 0.02251
-    Cumulative Proportion  0.4427 0.6324 0.72636 0.79239 0.84734 0.88759 0.91010
-                               PC8    PC9    PC10   PC11    PC12    PC13    PC14
-    Standard deviation     0.69037 0.6457 0.59219 0.5421 0.51104 0.49128 0.39624
-    Proportion of Variance 0.01589 0.0139 0.01169 0.0098 0.00871 0.00805 0.00523
-    Cumulative Proportion  0.92598 0.9399 0.95157 0.9614 0.97007 0.97812 0.98335
-                              PC15    PC16    PC17    PC18    PC19    PC20   PC21
-    Standard deviation     0.30681 0.28260 0.24372 0.22939 0.22244 0.17652 0.1731
-    Proportion of Variance 0.00314 0.00266 0.00198 0.00175 0.00165 0.00104 0.0010
-    Cumulative Proportion  0.98649 0.98915 0.99113 0.99288 0.99453 0.99557 0.9966
-                              PC22    PC23   PC24    PC25    PC26    PC27    PC28
-    Standard deviation     0.16565 0.15602 0.1344 0.12442 0.09043 0.08307 0.03987
-    Proportion of Variance 0.00091 0.00081 0.0006 0.00052 0.00027 0.00023 0.00005
-    Cumulative Proportion  0.99749 0.99830 0.9989 0.99942 0.99969 0.99992 0.99997
-                              PC29    PC30
-    Standard deviation     0.02736 0.01153
-    Proportion of Variance 0.00002 0.00000
-    Cumulative Proportion  1.00000 1.00000
-
-<u>**NOTE**</u>: This **wisc.df** will give us the data of **30
-principle components** proposing std., prop, and cum. variance.
-
-**Q4**. From your results, what proportion of the original variance is
-captured by the first principal components (PC1)?
-
--   the proportion of the original variance for PC1 is **0.4427**
-
-**Q5**. How many principal components (PCs) are required to describe at
-least 70% of the original variance in the data?
-
--   To reach the **70%** of the original variance needs to reach from
-    **PC1 to PC3**. so three principle components PC3
-
-**Q6**. How many principal components (PCs) are required to describe at
-least 90% of the original variance in the data?
-
--   To reach the **90%** of the original variance needs to reach from
-    **PC1 to PC9**. So nine principle components PC9
-
-## Interpreting PCA results
-
-Create a biplot of the `wisc.pr` using the `biplot()` function.
-
-``` r
-# Using bioplot command on the wis.pr
-biplot(wisc.pr)
-```
-
-![](Untitled_files/figure-gfm/unnamed-chunk-11-1.png)
-
-**Q7.** What stands out to you about this plot? Is it easy or difficult
-to understand? Why?
-
--   When using `biplot()` on `wisc.pr` , we are given a difficult plot
-    with PC2 vs PC1 with two factors colored red and black which seems
-    abstract trying to determine the benign and malignant cells
-    initially observing
-
-So lets generate a more standard scatter plot of each observation along
-principal components 1 and 2 (i.e. a plot of PC1 vs PC2 available as the
-first two columns of `wisc.pr$x`) and color the points by the diagnosis
-(available in the `diagnosis` vector you created earlier).
-
-``` r
-# Scatter plot observations by components 1 and 2
-plot( wisc.pr$x[,1] ,wisc.pr$x[,2], col= as.factor(diagnosis), xlab = "PC1", ylab = "PC2")
-```
-
-![](Untitled_files/figure-gfm/unnamed-chunk-12-1.png)
-
-**Q8.** Generate a similar plot for principal components 1 and 3. What
-do you notice about these plots?
-
-``` r
-# Scatter plot observations by components 1 and 3
-plot( wisc.pr$x[,1] ,wisc.pr$x[,3], col= as.factor(diagnosis), xlab = "PC1", ylab = "PC3")
-```
-
-![](Untitled_files/figure-gfm/unnamed-chunk-13-1.png)
-
-we can use the **ggplot2** package to make a more fancy figure we will
-also need to add our `diagnosis` vector as a column if we want to use it
-for mapping to the plot color aesthetic
-
-``` r
-# Create a data.frame for ggplot
-df <- as.data.frame(wisc.pr$x)
-df$diagnosis <- diagnosis
-
-# Load the ggplot2 package
-library(ggplot2)
-
-# Make a scatter plot colored by diagnosis
-ggplot(df) + 
-  aes(PC1, PC2, col=as.factor(diagnosis)) + geom_point()
-```
-
-![](Untitled_files/figure-gfm/unnamed-chunk-14-1.png)
-
-## Variance explained
-
-Calculate the variance of each principal component by squaring the sdev
-component of `wisc.pr` (i.e. `wisc.pr$sdev^2`). Save the result as an
-object called `pr.var`.
-
-``` r
-# Calculate variance of each component
-pr.var <- wisc.pr$sdev^2
-head(pr.var)
-```
-
-    [1] 13.281608  5.691355  2.817949  1.980640  1.648731  1.207357
-
-Assign this to a variable called `pve` and create a plot of variance
-explained for each principal component.
-
-``` r
-# Variance explained by each principal component: pve
-pve <- pr.var/sum(pr.var)
-
-# Plot variance explained for each principal component
-plot(pve, xlab = "Principal Component", 
-     ylab = "Proportion of Variance Explained", 
-     ylim = c(0, 1), type = "o")
-```
-
-![](Untitled_files/figure-gfm/unnamed-chunk-16-1.png)
-
-### Alternative method…
-
-``` r
-# Alternative scree plot of the same data, note data driven y-axis
-barplot(pve, ylab = "Precent of Variance Explained",
-     names.arg=paste0("PC",1:length(pve)), las=2, axes = FALSE)
-axis(2, at=pve, labels=round(pve,2)*100 )
-```
-
-![](Untitled_files/figure-gfm/unnamed-chunk-17-1.png)
-
-## Few CRAN packages that are helpful for PCA
-
-``` r
-#install.packages("factoextra")
+# View the data frame from counts 
+View(counts)
 ```
 
 ``` r
-## ggplot based graph
-#install.packages("factoextra")
-library(factoextra)
+# View the data frame from metadata
+View(metadata)
 ```
 
-    Welcome! Want to learn more? See two factoextra-related books at https://goo.gl/ve3WBa
+-   **Q1.** How many genes are in this dataset?
 
 ``` r
-fviz_eig(wisc.pr, addlabels = TRUE)
+# Get and print the number of rows in the data frame
+nrow(counts)
+```
+
+    [1] 38694
+
+There are **38694 genes** observed using `nrow(counts)`
+
+-   **Q2.** How many ‘control’ cell lines do we have?
+
+``` r
+# Calculate the number of 'control' in the 'dex' column
+control_cell_lines<-table(metadata$dex)['control']
+
+#print the new variable
+control_cell_lines
+```
+
+    control 
+          4 
+
+There are **4 ‘control’** cell lines and 4 ‘treated’ cell lines
+
+# 3. Toy differential gene expression
+
+Look at the metadata object again to see which samples are `control` and
+which are drug `treated`. Note that the control samples are SRR1039508,
+SRR1039512, SRR1039516, and SRR1039520. This bit of code will first find
+the sample `id` for those labeled control. Then calculate the mean
+counts per gene across these samples:
+
+``` r
+# Get rows where 'dex' is 'control'
+control <- metadata[metadata[,"dex"]=="control",]
+
+# Get corresponding counts
+control.counts <- counts[ ,control$id]
+
+# Calculate the mean of these counts
+control.mean <- rowSums( control.counts )/4 
+
+# Display the first few elements of the calculated mean
+head(control.mean)
+```
+
+    ENSG00000000003 ENSG00000000005 ENSG00000000419 ENSG00000000457 ENSG00000000460 
+             900.75            0.00          520.50          339.75           97.25 
+    ENSG00000000938 
+               0.75 
+
+``` r
+# Filter rows where 'dex' is 'control'
+metadata[,"dex"] == 'control'
+```
+
+    [1]  TRUE FALSE  TRUE FALSE  TRUE FALSE  TRUE FALSE
+
+``` r
+# Filter rows where 'dex' is 'control'
+metadata[metadata[,"dex"] == 'control',]
+```
+
+              id     dex celltype     geo_id
+    1 SRR1039508 control   N61311 GSM1275862
+    3 SRR1039512 control  N052611 GSM1275866
+    5 SRR1039516 control  N080611 GSM1275870
+    7 SRR1039520 control  N061011 GSM1275874
+
+``` r
+# Filter rows where 'dex' is 'control' by setting a new varibale
+control <- metadata[metadata[,"dex"]=="control",]
+
+# Access 'id' column of the 'control' data frame
+control$id
+```
+
+    [1] "SRR1039508" "SRR1039512" "SRR1039516" "SRR1039520"
+
+``` r
+# Get corresponding counts
+control.counts<- (counts[,control$id])
+
+# Calculate the row means of these counts
+ontrol.means <- rowMeans(control.counts)
+```
+
+An alternative way to do this same thing using the `dplyr` package from
+the tidyverse is shown below.
+
+``` r
+# Install and load necessary libraries
+library(dplyr)
+```
+
+
+    Attaching package: 'dplyr'
+
+    The following object is masked from 'package:Biobase':
+
+        combine
+
+    The following object is masked from 'package:matrixStats':
+
+        count
+
+    The following objects are masked from 'package:GenomicRanges':
+
+        intersect, setdiff, union
+
+    The following object is masked from 'package:GenomeInfoDb':
+
+        intersect
+
+    The following objects are masked from 'package:IRanges':
+
+        collapse, desc, intersect, setdiff, slice, union
+
+    The following objects are masked from 'package:S4Vectors':
+
+        first, intersect, rename, setdiff, setequal, union
+
+    The following objects are masked from 'package:BiocGenerics':
+
+        combine, intersect, setdiff, union
+
+    The following objects are masked from 'package:stats':
+
+        filter, lag
+
+    The following objects are masked from 'package:base':
+
+        intersect, setdiff, setequal, union
+
+``` r
+# Filter rows where 'dex' is 'control' using dplyr
+control <- metadata %>% filter(dex=="control")
+
+# Get corresponding counts using dplyr
+control.counts <- counts%>% select(control$id) 
+
+# Calculate the mean of these counts
+control.mean <- rowSums(control.counts)/4
+
+# Display the first few elements of the calculated mean
+head(control.mean)
+```
+
+    ENSG00000000003 ENSG00000000005 ENSG00000000419 ENSG00000000457 ENSG00000000460 
+             900.75            0.00          520.50          339.75           97.25 
+    ENSG00000000938 
+               0.75 
+
+-   **Q3.** How would you make the above code in either approach more
+    robust?
+
+`rowSums(control.counts)/4` is problematic because it is not as
+reproducible if new data had more or less variables.
+rowMeans(control.counts) is more reproducible because it will adapt to
+elements of variable added or taken away.
+
+-   **Q4.** Follow the same procedure for the `treated` samples
+    (i.e. calculate the mean per gene across drug treated samples and
+    assign to a labeled vector called `treated.mean`)
+
+``` r
+# Filter rows where 'dex' is 'treated'
+treated <- metadata[metadata[,"dex"]=="treated",]
+
+# Get corresponding counts
+treated.counts <- (counts[,treated$id])
+
+# Calculate the row means of these counts
+treated.mean <- rowMeans(treated.counts)
+
+# Display the first few elements of the calculated mean
+head(treated.mean)
+```
+
+    ENSG00000000003 ENSG00000000005 ENSG00000000419 ENSG00000000457 ENSG00000000460 
+             658.00            0.00          546.00          316.50           78.75 
+    ENSG00000000938 
+               0.00 
+
+We will combine our meancount data for bookkeeping purposes.
+
+``` r
+# Create a new data frame with 'control.mean' and 'treated.mean' as columns
+meancounts <- data.frame(control.mean, treated.mean)
+
+# Calculate the column sums of this new data frame
+colSums(meancounts)
+```
+
+    control.mean treated.mean 
+        23005324     22196524 
+
+-   **Q5 (a).** Create a scatter plot showing the mean of the treated
+    samples against the mean of the control samples. Your plot should
+    look something like the following.
+
+``` r
+# Plot 'control.mean' against 'treated.mean'
+plot(meancounts[,1],meancounts[,2], xlab="Control", ylab="Treated")
 ```
 
 ![](Untitled_files/figure-gfm/unnamed-chunk-19-1.png)
 
-## Communicating PCA results
+-   **Q5 (b).**You could also use the **ggplot2** package to make this
+    figure producing the plot below. What **geom\_?()** function would
+    you use for this plot?
 
-explain the mapping from the original features to the principal
-components. The principal components are naturally ordered from the most
-variance explained to the least variance explained.
-
-**Q9.** For the first principal component, what is the component of the
-loading vector (i.e. `wisc.pr$rotation[,1]`) for the
-feature `concave.points_mean`? This tells us how much this original
-feature contributes to the first PC.
+`geom_point` function would be used for this plot
 
 ``` r
-# Extract the loading of the "concave.points_mean" variable for the first principal component (PC1)
-wisc.pr$rotation["concave.points_mean",1]
+# Load necessary libraries
+library(ggplot2)
+
+# Plot 'control.mean' against 'treated.mean'
+plot(meancounts[,1],meancounts[,2], xlab="Control", ylab="Treated") +
+  geom_point()
 ```
 
-    [1] -0.2608538
+![](Untitled_files/figure-gfm/unnamed-chunk-20-1.png)
 
--   The <u>**-0.2608538**</u> indicates how much the
-    ‘concave.points_mean’ feature contributes to the first principal
-    component
+    NULL
 
-# 3. Hierarchical clustering
+##### Wait a sec. There are 60,000-some rows in this data, but I’m only seeing a few dozen dots at most outside of the big clump around the origin.
 
-As part of the preparation for hierarchical clustering, the distance
-between all pairs of observations are computed. Furthermore, there are
-different ways to link clusters together, with single, complete, and
-average being the most common "linkage methods".
+-   **Q6.** Try plotting both axes on a log scale. What is the argument
+    to **plot()** that allows you to do this?
 
-First scale the `wisc.data` data and assign the result to `data.scaled`.
+Using the **`log(meancounts)`** will give desired conditions for the
+plot
 
 ``` r
-# Scale the wisc.data data using the "scale()" function
-data.scaled <- scale(wisc.data)
+# Apply a log-transformation to the mean counts and create a scatter plot of the log-transformed mean counts
+plot(log(meancounts))
 ```
 
-Calculate the (Euclidean) distances between all pairs of observations in
-the new scaled data set and assign the result to`data.dist`.
+![](Untitled_files/figure-gfm/unnamed-chunk-21-1.png)
+
+There is no logarithmic expression for zeros which is omitting 15281
+y-values and 15832 x-values.
+
+### Fold Change Logarithmic
 
 ``` r
-# Calculate the Euclidean distance between rows in the scaled data
-data.dist <- dist(data.scaled)
+# simple division
+40/20
 ```
 
-Create a hierarchical clustering model using complete linkage. Manually
-specify the method argument to hclust() and assign the results
-to `wisc.hclust`.
+    [1] 2
+
+If there is no difference in expression then we will get zero
 
 ``` r
-# Perform hierarchical clustering using complete linkage method
-wisc.hclust <- hclust(data.dist, method = "complete")
+# logarithimic function with base 2
+log2(20/20)
 ```
 
-## Results of hierarchical clustering
+    [1] 0
 
-Let's use the hierarchical clustering model you just created to
-determine a height
-
-**Q10.** Using the `plot()` and `abline()` functions, what is the height
-at which the clustering model has 4 clusters?
+If we double the expression we will get 1 fold
 
 ``` r
-# Plot the dendrogram for the hierarchical clustering results
-plot(wisc.hclust)
-
-# Add a horizontal line at height 19 with red color and dashed line type
-abline(h=19, col="red", lty=2)
+# logarithmic function with base 2
+log2(40/20)
 ```
 
-![](Untitled_files/figure-gfm/unnamed-chunk-24-1.png)
+    [1] 1
 
--   For cluster, we are essentially ‘cutting’ the **Dendrogram** at that
-    height. The number of vertical lines the horizontal line crosses
-    corresponds to the number of clusters at that particular
-    dissimilarity level. This can help you to determine the optimal
-    number of clusters, based on your specific needs or the specific
-    requirements of your analysis. The set **h value at 19** allows us
-    to observe 4 clusters
+these differences can be quantified with standard method with this
+package `log2()`
 
-## Selecting number of clusters
-
-Use `cutree()` to cut the tree so that it has 4 clusters. Assign the
-output to the variable `wisc.hclust.clusters`.
+To calculate the log2 of the fold change between the treated and
+control…
 
 ``` r
-# stteing the parameters using the wis.clust set at h=19 with the cutree command 
-wisc.hclust.clusters <- cutree(wisc.hclust, h=19)
+# Calculate log2 fold change and add it to the 'meancounts' data frame
+meancounts$log2fc <- log2(meancounts$treated.mean/
+                            meancounts$control.mean)
+
+# Display the first few elements of meancounts
+head(meancounts)
 ```
 
-We can use the `table()` function to compare the cluster membership to
-the actual diagnoses.
+                    control.mean treated.mean      log2fc
+    ENSG00000000003       900.75       658.00 -0.45303916
+    ENSG00000000005         0.00         0.00         NaN
+    ENSG00000000419       520.50       546.00  0.06900279
+    ENSG00000000457       339.75       316.50 -0.10226805
+    ENSG00000000460        97.25        78.75 -0.30441833
+    ENSG00000000938         0.75         0.00        -Inf
+
+To remove zero values
 
 ``` r
-# Use table to determine the four clusters of how many benign (B) and malignant(M) cells are present 
-table(wisc.hclust.clusters, diagnosis)
+# Identify rows with zero values in either of the first two columns
+zero.vals <- which(meancounts[,1:2]==0, arr.ind=TRUE)
+
+# Get unique row indices
+to.rm <- unique(zero.vals[,1])
+
+# Remove rows with zero values to create 'mycounts
+mycounts <- meancounts[-to.rm,]
+
+# Display the first few elements of mycounts
+head(mycounts)
 ```
 
-                        diagnosis
-    wisc.hclust.clusters   B   M
-                       1  12 165
-                       2   2   5
-                       3 343  40
-                       4   0   2
+                    control.mean treated.mean      log2fc
+    ENSG00000000003       900.75       658.00 -0.45303916
+    ENSG00000000419       520.50       546.00  0.06900279
+    ENSG00000000457       339.75       316.50 -0.10226805
+    ENSG00000000460        97.25        78.75 -0.30441833
+    ENSG00000000971      5219.00      6687.50  0.35769358
+    ENSG00000001036      2327.00      1785.75 -0.38194109
 
-Here we picked four clusters and see that cluster 1 largely corresponds
-to malignant cells (with `diagnosis` values of 1) whilst cluster 3
-largely corresponds to benign cells (with `diagnosis` values of 0).
+Overexpressed and Underexpressed genes:
 
-## Using different methods
+-   **Q7.** What is the purpose of the `arr.ind` argument in the
+    **which()** function call above? Why would we then take the first
+    column of the output and need to call the **unique()** function?
 
-number of different *"methods"* we can use to combine points during the
-hierarchical clustering procedure. These
-include `"single"`, `"complete"`, `"average"` and (my
-favorite) `"ward.D2"`.
-
-**Q12.** Which method gives your favorite results for the
-same `data.dist` dataset? Explain your reasoning.
+Let’s filter the dataset both ways to see how many genes
 
 ``` r
-wisc.hclust <- hclust(data.dist, method = "complete")
-plot(wisc.hclust)
+# Set up a new varibale for up-regulated genes higher than 2fc level pulled form mycounts data frame
+up.ind <- mycounts$log2fc > 2
+
+# Set up a new varibale for down-regulated genes lower than 2fc level pulled form mycounts data frame
+down.ind <- mycounts$log2fc < (-2)
 ```
 
-![](Untitled_files/figure-gfm/unnamed-chunk-27-1.png)
+-   **Q8.** Using the `up.ind` vector above can you determine how many
+    up regulated genes we have at the greater than 2 fc level?
 
 ``` r
-wisc.hclust.avg <- hclust(data.dist, method = "average")
-plot(wisc.hclust.avg)
+# Count TRUE values in 'up.ind'
+table(up.ind)['TRUE']
 ```
 
-![](Untitled_files/figure-gfm/unnamed-chunk-27-2.png)
+    TRUE 
+     250 
+
+Using the vector `up.ind` gave us 250 genes up-regulated
+
+-   **Q9.** Using the `down.ind` vector above can you determine how many
+    down regulated genes we have at the greater than 2 fc level?
 
 ``` r
-wisc.hclust.sing <- hclust(data.dist, method = "single")
-plot(wisc.hclust.sing)
+# Count TRUE values in 'down.ind'
+table(down.ind)['TRUE']
 ```
 
-![](Untitled_files/figure-gfm/unnamed-chunk-27-3.png)
+    TRUE 
+     367 
+
+Using the vector `down.ind` gave us 367 genes down-regulated
+
+-   **Q10.** Do you trust these results? Why or why not?
+
+**Yes!** As a user perspective these packages give proper statistics
+using <u>negative binomial model</u> to display background expressions.
+There is less fallacies made creating these rigorous data when comparing
+to human problem solving if it was to be solved by hand
+
+# 4. DESeq2 analysis
+
+The `DESeq()` function takes a DESeqDataSet and returns a DESeqDataSet,
 
 ``` r
-wisc.hclust.D2 <- hclust(data.dist, method = "ward.D2")
-plot(wisc.hclust.D2)
+# Load DESeq2 library
+library(DESeq2)
 ```
-
-![](Untitled_files/figure-gfm/unnamed-chunk-27-4.png)
-
--   **wisc.hclust** with `method="ward.D2"` is the favorite due this
-    method minimizes the total within-cluster variance. At each step,
-    the pair of clusters with the smallest increase in total
-    within-cluster variance after merging is chosen to merge. The method
-    is suitable when you want to create compact and spherical clusters,
-    and it is less prone to the chaining effect
-
-# 4. Combining methods
-
-## Clustering on PCA results
-
-Note the two main branches of or dendrogram indicating two main
-clusters - maybe these are malignant and benign. Let's find out!
 
 ``` r
-# Perform hierarchical clustering on the first 7 principal components using the Ward's method
-wisc.pr.hclust <- hclust(dist(wisc.pr$x[,1:7]), method="ward.D2")
-
-# Cut the dendrogram into 2 groups and assign each sample to a group
-grps <- cutree(wisc.pr.hclust, k=2)
-
-# Create a table with the counts of samples in each group
-table(grps)
+# Use citation function to pull relavent data regarding DESeq2 within published work
+citation("DESeq2")
 ```
 
-    grps
-      1   2 
-    216 353 
+
+    To cite package 'DESeq2' in publications use:
+
+      Love, M.I., Huber, W., Anders, S. Moderated estimation of fold change
+      and dispersion for RNA-seq data with DESeq2 Genome Biology 15(12):550
+      (2014)
+
+    A BibTeX entry for LaTeX users is
+
+      @Article{,
+        title = {Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2},
+        author = {Michael I. Love and Wolfgang Huber and Simon Anders},
+        year = {2014},
+        journal = {Genome Biology},
+        doi = {10.1186/s13059-014-0550-8},
+        volume = {15},
+        issue = {12},
+        pages = {550},
+      }
+
+#### Create specific objects to apply the functions creating an object for the whole experiment with design in mind (treated vs control)
+
+Let’s generate the specific object that DESeq2 needs:
 
 ``` r
-# Create a contingency table comparing the groups obtained from clustering and the diagnosis
-table(grps, diagnosis)
+# Set a new variable as dds to build the required DESeqDataSet object
+dds <- DESeqDataSetFromMatrix(countData=counts, 
+                              colData=metadata, 
+                              design=~dex)
 ```
 
-        diagnosis
-    grps   B   M
-       1  28 188
-       2 329  24
+    converting counts to integer mode
+
+    Warning in DESeqDataSet(se, design = design, ignoreRank): some variables in
+    design formula are characters, converting to factors
 
 ``` r
-# Create a scatter plot of the first two principal components colored by the cluster assignments
-plot(wisc.pr$x[,1:2], col=grps)
+# Print dds
+dds
 ```
 
-![](Untitled_files/figure-gfm/unnamed-chunk-30-1.png)
+    class: DESeqDataSet 
+    dim: 38694 8 
+    metadata(1): version
+    assays(1): counts
+    rownames(38694): ENSG00000000003 ENSG00000000005 ... ENSG00000283120
+      ENSG00000283123
+    rowData names(0):
+    colnames(8): SRR1039508 SRR1039509 ... SRR1039520 SRR1039521
+    colData names(4): id dex celltype geo_id
+
+## DESeq analysis
+
+Would result an error “couldn’t find results. you should first run
+DESeq()”
 
 ``` r
-# Create a scatter plot of the first two principal components colored by the cluster assignments with as.factor of diagnosis
-plot(wisc.pr$x[,1:2], col=as.factor(diagnosis))
+# results(dds)
 ```
 
-![](Untitled_files/figure-gfm/unnamed-chunk-31-1.png)
-
-`hclust` cluster 1 is mostly "M" and cluster 2 is mostly "B" as we saw
-from the results of calling `table(grps, diagnosis)`
+DESeq pipeline on the `dds` object, and reassigning the whole thing back
+to `dds`
 
 ``` r
-# Convert the cluster assignments to a factor
-g <- as.factor(grps)
-
-# Get the levels of the factor
-levels(g)
+# set the DESeq() fucntion using dds to a new dds variable 
+dds <- DESeq(dds)
 ```
 
-    [1] "1" "2"
+    estimating size factors
 
-Reversing the order…
+    estimating dispersions
+
+    gene-wise dispersion estimates
+
+    mean-dispersion relationship
+
+    final dispersion estimates
+
+    fitting model and testing
 
 ``` r
-# Now reverse the order using relevel function
-g <- relevel(g,2)
-
-# Get the levels of the factor
-levels(g)
+# print dds
+dds
 ```
 
-    [1] "2" "1"
+    class: DESeqDataSet 
+    dim: 38694 8 
+    metadata(1): version
+    assays(4): counts mu H cooks
+    rownames(38694): ENSG00000000003 ENSG00000000005 ... ENSG00000283120
+      ENSG00000283123
+    rowData names(22): baseMean baseVar ... deviance maxCooks
+    colnames(8): SRR1039508 SRR1039509 ... SRR1039520 SRR1039521
+    colData names(5): id dex celltype geo_id sizeFactor
+
+### Getting results
+
+we can get results out of the object simply by calling
+the `results()` function
 
 ``` r
-# Plot using our re-ordered factor 
-plot(wisc.pr$x[,1:2], col=g)
+# Run the DESeq pipeline adjusting the previous data
+res <- results(dds)
+
+# prit res
+res
 ```
 
-![](Untitled_files/figure-gfm/unnamed-chunk-34-1.png)
+    log2 fold change (MLE): dex treated vs control 
+    Wald test p-value: dex treated vs control 
+    DataFrame with 38694 rows and 6 columns
+                     baseMean log2FoldChange     lfcSE      stat    pvalue
+                    <numeric>      <numeric> <numeric> <numeric> <numeric>
+    ENSG00000000003  747.1942     -0.3507030  0.168246 -2.084470 0.0371175
+    ENSG00000000005    0.0000             NA        NA        NA        NA
+    ENSG00000000419  520.1342      0.2061078  0.101059  2.039475 0.0414026
+    ENSG00000000457  322.6648      0.0245269  0.145145  0.168982 0.8658106
+    ENSG00000000460   87.6826     -0.1471420  0.257007 -0.572521 0.5669691
+    ...                   ...            ...       ...       ...       ...
+    ENSG00000283115  0.000000             NA        NA        NA        NA
+    ENSG00000283116  0.000000             NA        NA        NA        NA
+    ENSG00000283119  0.000000             NA        NA        NA        NA
+    ENSG00000283120  0.974916      -0.668258   1.69456 -0.394354  0.693319
+    ENSG00000283123  0.000000             NA        NA        NA        NA
+                         padj
+                    <numeric>
+    ENSG00000000003  0.163035
+    ENSG00000000005        NA
+    ENSG00000000419  0.176032
+    ENSG00000000457  0.961694
+    ENSG00000000460  0.815849
+    ...                   ...
+    ENSG00000283115        NA
+    ENSG00000283116        NA
+    ENSG00000283119        NA
+    ENSG00000283120        NA
+    ENSG00000283123        NA
+
+We can summarize some basic tallies using the summary function.
 
 ``` r
-# Use the distance along the first 7 PCs for clustering i.e. wisc.pr$x[, 1:7]
-wisc.pr.hclust <- hclust(dist(wisc.pr$x[,1:7]), 
-                         method="ward.D2")
+# Use summary function to achieve p-value at 0.05 for the argument 
+summary(res, alpha=0.05)
 ```
 
-Cut this hierarchical clustering model into 2 clusters and assign the
-results to `wisc.pr.hclust.clusters`.
 
-``` r
-# Cut the dendrogram into 2 clusters and assign each sample to a cluster
-wisc.pr.hclust.clusters <- cutree(wisc.pr.hclust, k=2)
-```
-
-<br>
-
-**Q13**. How well does the newly created model with four clusters
-separate out the two diagnoses?
-
-``` r
-# Compare to actual diagnoses
-table(wisc.pr.hclust.clusters,diagnosis)
-```
-
-                           diagnosis
-    wisc.pr.hclust.clusters   B   M
-                          1  28 188
-                          2 329  24
-
-**Q14**. How well do the hierarchical clustering models you created in
-previous sections (i.e. before PCA) do in terms of separating the
-diagnoses? Again, use the `table()` function to compare the output of
-each model (`wisc.km$cluster` and `wisc.hclust.clusters`) with the
-vector containing the actual diagnoses.
-
-``` r
-# Create a contingency table comparing the groups obtained from clustering (wisc.hclust.clusters) and the diagnosis
-table(wisc.hclust.clusters, diagnosis)
-```
-
-                        diagnosis
-    wisc.hclust.clusters   B   M
-                       1  12 165
-                       2   2   5
-                       3 343  40
-                       4   0   2
-
-``` r
-# Create a contingency table comparing the groups obtained from clustering (wis.pr.hclust.clusters) and the diagnosis
-wis.pr.hclust.clusters <- cutree(wisc.pr.hclust, k=2)
-table(wis.pr.hclust.clusters, diagnosis)
-```
-
-                          diagnosis
-    wis.pr.hclust.clusters   B   M
-                         1  28 188
-                         2 329  24
-
-``` r
-# wis.pr.hclust.clusters vector analysis perscion Benign
-(329/569)*100
-```
-
-    [1] 57.82074
-
-``` r
-# wis.pr.hclust.clusters vector analysis perscion Malignancy
-(188/569)*100
-```
-
-    [1] 33.04042
-
--   57% accuracy for B and 33% accuracy for M collectively 90%
-
-``` r
-# wisc.hclust.clusters vector analysis perscion Benign
-(343/569)*100
-```
-
-    [1] 60.2812
-
-``` r
-# wisc.hclust.clusters vector analysis perscion Malignancy
-(165/569)*100
-```
-
-    [1] 28.99824
-
--   60% accuracy for B and 28% accuracy for M collectively 88%
-
--   Based on this we can conclude that wis.pr.hclust.clusters has the
-    highest accuracy rate at 90% when both clusters are in summation but
-    for treatment we want to lower the rate false-negative therefore
-    having higher rate for Malignancy will help the treatment at 60% for
-    wisc.hclust.clusters
-
-# 6. Prediction
-
-**Q16.** Which of these new patients should we prioritize for follow up
-based on your results?
+    out of 25258 with nonzero total read count
+    adjusted p-value < 0.05
+    LFC > 0 (up)       : 1242, 4.9%
+    LFC < 0 (down)     : 939, 3.7%
+    outliers [1]       : 142, 0.56%
+    low counts [2]     : 9971, 39%
+    (mean count < 10)
+    [1] see 'cooksCutoff' argument of ?results
+    [2] see 'independentFiltering' argument of ?results
 
   
-We will use the `predict()` function that will take our PCA model from
-before and [new cancer cell
-data](https://tinyurl.com/new-samples-CSV) and project that data onto
-our PCA space.
+The results function contains a number of arguments to customize the
+results table. By default the argument `alpha` is set to 0.1.
 
 ``` r
-#url <- "new_samples.csv"
-# Read new samples data from the provided URL
-url <- "https://tinyurl.com/new-samples-CSV"
-new <- read.csv(url)
+# Extract results using p-value of 0.05 as the parameter
+res05 <- results(dds, alpha=0.05)
 
-# Predict the principal components for the new samples using the PCA model
-npc <- predict(wisc.pr, newdata=new)
-
-# Print the predicted principal components
-npc
+# Print the summary
+summary(res05)
 ```
 
-               PC1       PC2        PC3        PC4       PC5        PC6        PC7
-    [1,]  2.576616 -3.135913  1.3990492 -0.7631950  2.781648 -0.8150185 -0.3959098
-    [2,] -4.754928 -3.009033 -0.1660946 -0.6052952 -1.140698 -1.2189945  0.8193031
-                PC8       PC9       PC10      PC11      PC12      PC13     PC14
-    [1,] -0.2307350 0.1029569 -0.9272861 0.3411457  0.375921 0.1610764 1.187882
-    [2,] -0.3307423 0.5281896 -0.4855301 0.7173233 -1.185917 0.5893856 0.303029
-              PC15       PC16        PC17        PC18        PC19       PC20
-    [1,] 0.3216974 -0.1743616 -0.07875393 -0.11207028 -0.08802955 -0.2495216
-    [2,] 0.1299153  0.1448061 -0.40509706  0.06565549  0.25591230 -0.4289500
-               PC21       PC22       PC23       PC24        PC25         PC26
-    [1,]  0.1228233 0.09358453 0.08347651  0.1223396  0.02124121  0.078884581
-    [2,] -0.1224776 0.01732146 0.06316631 -0.2338618 -0.20755948 -0.009833238
-                 PC27        PC28         PC29         PC30
-    [1,]  0.220199544 -0.02946023 -0.015620933  0.005269029
-    [2,] -0.001134152  0.09638361  0.002795349 -0.019015820
+
+    out of 25258 with nonzero total read count
+    adjusted p-value < 0.05
+    LFC > 0 (up)       : 1236, 4.9%
+    LFC < 0 (down)     : 933, 3.7%
+    outliers [1]       : 142, 0.56%
+    low counts [2]     : 9033, 36%
+    (mean count < 6)
+    [1] see 'cooksCutoff' argument of ?results
+    [2] see 'independentFiltering' argument of ?results
+
+# 5. Adding annotation data
+
+Here we load the **AnnotationDbi** package and the annotation data
+package for humans **org.Hs.eg.db**.
 
 ``` r
-# Create a scatter plot of the first two principal components colored by the diagnosis
-plot(wisc.pr$x[,1:2], col=as.factor(diagnosis))
-
-# Add the new samples' predicted principal components to the plot with blue color, circle symbol, and larger size
-points(npc[,1], npc[,2], col="blue", pch=16, cex=3)
-
-# Add text labels to the new samples' points with white color
-text(npc[,1], npc[,2], c(1,2), col="white")
+# Load AnnotationDbi library
+library("AnnotationDbi")
 ```
 
-![](Untitled_files/figure-gfm/unnamed-chunk-43-1.png)
 
-patient 2 principle component acquires malignant cells along the PC1 and
-PC2 due as indicated `as.factor(grps)` determining 1 as color black for
-benign and 2 as color red for malignant cells. Hence patient 2 should be
-more cautious due to encountering their cell within malignant cell as a
-correlative analysis
+    Attaching package: 'AnnotationDbi'
+
+    The following object is masked from 'package:dplyr':
+
+        select
+
+``` r
+# Load org.Hs.eg.db library
+library("org.Hs.eg.db")
+```
+
+To get a list of all available key types that we can use to map between,
+use the `columns()` function:
+
+``` r
+# Get the list of available columns or key types in the org.Hs.eg.db packag
+columns(org.Hs.eg.db)
+```
+
+     [1] "ACCNUM"       "ALIAS"        "ENSEMBL"      "ENSEMBLPROT"  "ENSEMBLTRANS"
+     [6] "ENTREZID"     "ENZYME"       "EVIDENCE"     "EVIDENCEALL"  "GENENAME"    
+    [11] "GENETYPE"     "GO"           "GOALL"        "IPI"          "MAP"         
+    [16] "OMIM"         "ONTOLOGY"     "ONTOLOGYALL"  "PATH"         "PFAM"        
+    [21] "PMID"         "PROSITE"      "REFSEQ"       "SYMBOL"       "UCSCKG"      
+    [26] "UNIPROT"     
+
+The main function we will use from the **AnnotationDbi** package is
+called **mapIds()**. We provide the row names of our results table as a
+key, and specify that `keytype=ENSEMBL.`
+
+``` r
+# Add gene symbols to the results
+res$symbol <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res), # Our genenames
+                     keytype="ENSEMBL",        # The format of our genenames
+                     column="SYMBOL",          # The new format we want to add
+                     multiVals="first")
+```
+
+    'select()' returned 1:many mapping between keys and columns
+
+``` r
+# Display the first few elements of res
+head(res)
+```
+
+    log2 fold change (MLE): dex treated vs control 
+    Wald test p-value: dex treated vs control 
+    DataFrame with 6 rows and 7 columns
+                      baseMean log2FoldChange     lfcSE      stat    pvalue
+                     <numeric>      <numeric> <numeric> <numeric> <numeric>
+    ENSG00000000003 747.194195     -0.3507030  0.168246 -2.084470 0.0371175
+    ENSG00000000005   0.000000             NA        NA        NA        NA
+    ENSG00000000419 520.134160      0.2061078  0.101059  2.039475 0.0414026
+    ENSG00000000457 322.664844      0.0245269  0.145145  0.168982 0.8658106
+    ENSG00000000460  87.682625     -0.1471420  0.257007 -0.572521 0.5669691
+    ENSG00000000938   0.319167     -1.7322890  3.493601 -0.495846 0.6200029
+                         padj      symbol
+                    <numeric> <character>
+    ENSG00000000003  0.163035      TSPAN6
+    ENSG00000000005        NA        TNMD
+    ENSG00000000419  0.176032        DPM1
+    ENSG00000000457  0.961694       SCYL3
+    ENSG00000000460  0.815849    C1orf112
+    ENSG00000000938        NA         FGR
+
+-   **Q11.** Run the **mapIds()** function two more times to add the
+    Entrez ID and UniProt accession and GENENAME as new columns called
+    `res$entrez`, `res$uniprot` and `res$genename`.
+
+``` r
+# Add Entrez ID to the results
+res$entrez <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res),
+                     column="ENTREZID",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+```
+
+    'select()' returned 1:many mapping between keys and columns
+
+``` r
+# Add UniProt accession to the results
+res$uniprot <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res),
+                     column="UNIPROT",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+```
+
+    'select()' returned 1:many mapping between keys and columns
+
+``` r
+# Add gene names to the results
+res$genename <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res),
+                     column="GENENAME",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+```
+
+    'select()' returned 1:many mapping between keys and columns
+
+``` r
+# Note: GENENAME column is not directly available in org.Hs.eg.db.
+# Therefore, use SYMBOL column as an alternative.
+
+# Print the updated 'res' data frame
+head(res)
+```
+
+    log2 fold change (MLE): dex treated vs control 
+    Wald test p-value: dex treated vs control 
+    DataFrame with 6 rows and 10 columns
+                      baseMean log2FoldChange     lfcSE      stat    pvalue
+                     <numeric>      <numeric> <numeric> <numeric> <numeric>
+    ENSG00000000003 747.194195     -0.3507030  0.168246 -2.084470 0.0371175
+    ENSG00000000005   0.000000             NA        NA        NA        NA
+    ENSG00000000419 520.134160      0.2061078  0.101059  2.039475 0.0414026
+    ENSG00000000457 322.664844      0.0245269  0.145145  0.168982 0.8658106
+    ENSG00000000460  87.682625     -0.1471420  0.257007 -0.572521 0.5669691
+    ENSG00000000938   0.319167     -1.7322890  3.493601 -0.495846 0.6200029
+                         padj      symbol      entrez     uniprot
+                    <numeric> <character> <character> <character>
+    ENSG00000000003  0.163035      TSPAN6        7105  A0A024RCI0
+    ENSG00000000005        NA        TNMD       64102      Q9H2S6
+    ENSG00000000419  0.176032        DPM1        8813      O60762
+    ENSG00000000457  0.961694       SCYL3       57147      Q8IZE3
+    ENSG00000000460  0.815849    C1orf112       55732  A0A024R922
+    ENSG00000000938        NA         FGR        2268      P09769
+                                  genename
+                               <character>
+    ENSG00000000003          tetraspanin 6
+    ENSG00000000005            tenomodulin
+    ENSG00000000419 dolichyl-phosphate m..
+    ENSG00000000457 SCY1 like pseudokina..
+    ENSG00000000460 chromosome 1 open re..
+    ENSG00000000938 FGR proto-oncogene, ..
+
+You can arrange and view the results by the adjusted p-value
+
+``` r
+# set a new varibale using order function 
+ord <- order( res$padj )
+
+#View(res[ord,])
+head(res[ord,])
+```
+
+    log2 fold change (MLE): dex treated vs control 
+    Wald test p-value: dex treated vs control 
+    DataFrame with 6 rows and 10 columns
+                     baseMean log2FoldChange     lfcSE      stat      pvalue
+                    <numeric>      <numeric> <numeric> <numeric>   <numeric>
+    ENSG00000152583   954.771        4.36836 0.2371268   18.4220 8.74490e-76
+    ENSG00000179094   743.253        2.86389 0.1755693   16.3120 8.10784e-60
+    ENSG00000116584  2277.913       -1.03470 0.0650984  -15.8944 6.92855e-57
+    ENSG00000189221  2383.754        3.34154 0.2124058   15.7319 9.14433e-56
+    ENSG00000120129  3440.704        2.96521 0.2036951   14.5571 5.26424e-48
+    ENSG00000148175 13493.920        1.42717 0.1003890   14.2164 7.25128e-46
+                           padj      symbol      entrez     uniprot
+                      <numeric> <character> <character> <character>
+    ENSG00000152583 1.32441e-71     SPARCL1        8404  A0A024RDE1
+    ENSG00000179094 6.13966e-56        PER1        5187      O15534
+    ENSG00000116584 3.49776e-53     ARHGEF2        9181      Q92974
+    ENSG00000189221 3.46227e-52        MAOA        4128      P21397
+    ENSG00000120129 1.59454e-44       DUSP1        1843      B4DU40
+    ENSG00000148175 1.83034e-42        STOM        2040      F8VSL7
+                                  genename
+                               <character>
+    ENSG00000152583           SPARC like 1
+    ENSG00000179094 period circadian reg..
+    ENSG00000116584 Rho/Rac guanine nucl..
+    ENSG00000189221    monoamine oxidase A
+    ENSG00000120129 dual specificity pho..
+    ENSG00000148175               stomatin
+
+Finally, let’s write out the ordered significant results with
+annotations.
+
+``` r
+# Save the ordered results to a CSV file
+write.csv(res[ord,], "deseq_results.csv")
+```
+
+# 6. Data Visualization
+
+## Volcano plots
+
+``` r
+# Assuming 'res' is the results object obtained from DESeq analysis
+
+# Create the scatter plot
+plot( res$log2FoldChange,  -log10(res$padj), 
+      xlab="Log2(FoldChange)",
+      ylab="-Log10(P-value)")
+```
+
+![](Untitled_files/figure-gfm/unnamed-chunk-45-1.png)
+
+To make this more useful we can add some guidelines (with the `abline()`
+function)
+
+``` r
+# Create the scatter plot
+plot( res$log2FoldChange,  -log10(res$padj), 
+ ylab="-Log(P-value)", xlab="Log2(FoldChange)")
+
+# Add some cut-off lines
+abline(v=c(-2,2), col="darkgray", lty=2)
+abline(h=-log(0.05), col="darkgray", lty=2)
+```
+
+![](Untitled_files/figure-gfm/unnamed-chunk-46-1.png)
+
+To color the points we will setup a custom color vector indicating
+transcripts with large fold change and significant differences between
+conditions:
+
+``` r
+# Setup our custom point color vector 
+mycols <- rep("gray", nrow(res))
+mycols[ abs(res$log2FoldChange) > 2 ]  <- "red" 
+
+inds <- (res$padj < 0.01) & (abs(res$log2FoldChange) > 2 )
+mycols[ inds ] <- "blue"
+
+# Volcano plot with custom colors 
+plot( res$log2FoldChange,  -log10(res$padj), 
+ col=mycols, ylab="-Log(P-value)", xlab="Log2(FoldChange)" )
+
+# Cut-off lines
+abline(v=c(-2,2), col="gray", lty=2)
+abline(h=-log(0.1), col="gray", lty=2)
+```
+
+![](Untitled_files/figure-gfm/unnamed-chunk-47-1.png)
+
+``` r
+# BiocManager::install("EnhancedVolcano")
+```
+
+``` r
+# Load up neccessary libraries 
+library(EnhancedVolcano)
+```
+
+    Loading required package: ggrepel
+
+``` r
+# Convert 'res' to a data frame
+x<- as.data.frame(res)
+```
+
+``` r
+# Create the enhanced volcano plot
+EnhancedVolcano(x,
+    lab = x$symbol,
+    x = 'log2FoldChange',
+    y = 'pvalue')
+```
+
+![](Untitled_files/figure-gfm/unnamed-chunk-51-1.png)
+
+# 7. Pathway analysis
+
+First we need to do our one time install of these required bioconductor
+packages:
+
+``` r
+# Run in your R console (i.e. not your Rmarkdown doc!)
+# BiocManager::install( c("pathview", "gage", "gageData") )
+```
+
+``` r
+# Load necessary libraries
+library(pathview)
+```
+
+    ##############################################################################
+    Pathview is an open source software package distributed under GNU General
+    Public License version 3 (GPLv3). Details of GPLv3 is available at
+    http://www.gnu.org/licenses/gpl-3.0.html. Particullary, users are required to
+    formally cite the original Pathview paper (not just mention it) in publications
+    or products. For details, do citation("pathview") within R.
+
+    The pathview downloads and uses KEGG data. Non-academic uses may require a KEGG
+    license agreement (details at http://www.kegg.jp/kegg/legal.html).
+    ##############################################################################
+
+``` r
+library(gage)
+```
+
+``` r
+library(gageData)
+
+# Load KEGG pathway sets for humans
+data(kegg.sets.hs)
+
+# Examine the first 2 pathways in this kegg set for humans
+head(kegg.sets.hs, 2)
+```
+
+    $`hsa00232 Caffeine metabolism`
+    [1] "10"   "1544" "1548" "1549" "1553" "7498" "9"   
+
+    $`hsa00983 Drug metabolism - other enzymes`
+     [1] "10"     "1066"   "10720"  "10941"  "151531" "1548"   "1549"   "1551"  
+     [9] "1553"   "1576"   "1577"   "1806"   "1807"   "1890"   "221223" "2990"  
+    [17] "3251"   "3614"   "3615"   "3704"   "51733"  "54490"  "54575"  "54576" 
+    [25] "54577"  "54578"  "54579"  "54600"  "54657"  "54658"  "54659"  "54963" 
+    [33] "574537" "64816"  "7083"   "7084"   "7172"   "7363"   "7364"   "7365"  
+    [41] "7366"   "7367"   "7371"   "7372"   "7378"   "7498"   "79799"  "83549" 
+    [49] "8824"   "8833"   "9"      "978"   
+
+Note that we used the **mapIDs()** function above to obtain Entrez gene
+IDs (stored in `res$entrez`) and we have the fold change results from
+DESeq2 analysis (stored in `res$log2FoldChange`).
+
+``` r
+# Extract log2 fold changes from 'res'
+foldchanges = res$log2FoldChange
+
+# Assign Entrez gene IDs as names to the fold changes
+names(foldchanges) = res$entrez
+
+# Display the first few entries of fold changes
+head(foldchanges)
+```
+
+           7105       64102        8813       57147       55732        2268 
+    -0.35070302          NA  0.20610777  0.02452695 -0.14714205 -1.73228897 
+
+Now, let’s run the **gage** pathway analysis.
+
+``` r
+# Get the results
+keggres = gage(foldchanges, gsets=kegg.sets.hs)
+```
+
+Now lets look at the object returned from **gage()**.
+
+``` r
+# View the attributes of 'keggres'
+attributes(keggres)
+```
+
+    $names
+    [1] "greater" "less"    "stats"  
+
+Like any list we can use the dollar syntax to access a named element,
+e.g. `head(keggres$greater)` and`head(keggres$less)`.
+
+Lets look at the first few down (less) pathway results:
+
+``` r
+# Look at the first three down (less) pathways
+head(keggres$less, 3)
+```
+
+                                          p.geomean stat.mean        p.val
+    hsa05332 Graft-versus-host disease 0.0004250461 -3.473346 0.0004250461
+    hsa04940 Type I diabetes mellitus  0.0017820293 -3.002352 0.0017820293
+    hsa05310 Asthma                    0.0020045888 -3.009050 0.0020045888
+                                            q.val set.size         exp1
+    hsa05332 Graft-versus-host disease 0.09053483       40 0.0004250461
+    hsa04940 Type I diabetes mellitus  0.14232581       42 0.0017820293
+    hsa05310 Asthma                    0.14232581       29 0.0020045888
+
+To begin with lets manually supply a `pathway.id` (namely the first part
+of the `"hsa05310 Asthma"`) that we could see from the print out above.
+
+``` r
+# Load necessary libraries
+library(pathview)
+
+# Generate pathway visualization
+pathview(gene.data=foldchanges, pathway.id="hsa05310")
+```
+
+    'select()' returned 1:1 mapping between keys and columns
+
+    Info: Working in directory /Users/arsamrostami/Desktop/bimm143/Class 12 Lab
+
+    Info: Writing image file hsa05310.pathview.png
+
+![![](hsa05310.pathview.png)](hsa05310.png)
+
+``` r
+# A different PDF based output of the same data
+pathview(gene.data=foldchanges, pathway.id="hsa05310", kegg.native=FALSE)
+```
+
+    'select()' returned 1:1 mapping between keys and columns
+
+    Info: Working in directory /Users/arsamrostami/Desktop/bimm143/Class 12 Lab
+
+    Info: Writing image file hsa05310.pathview.pdf
+
+**Q12**. Can you do the same procedure as above to plot the pathview
+figures for the top 2 down-reguled pathways?
