@@ -1,6 +1,6 @@
 # Classwork
-Hello! My name is Arsam Rostami a recent graduate of UCSD class of 23' majoring in Molecular and Cellular Biology with an emphasis on Cancer genomics 
-This page contains my classwork form BIMM 143: Bioinformatics instructed By Dr. Marcos Díaz-Gay and assisted by Josef Reimon Rodriguez Urrete on Spring of 23
+Hello! My name is Arsam Rostami a recent graduate of UCSD class of 23' majoring in Molecular and Cellular Biology with an emphasis on Cancer genomics. 
+This page contains my classwork form BIMM 143: Bioinformatics instructed By Dr. Marcos Díaz-Gay and assisted by Josef Reimon Rodriguez Urrete on Spring of 23.
 Bioinformatics class (Super Fun) But it can be hard sometimes! 
 
 In the realm of genomic data piling, I employed my Base R and AWS/Linux skills to effectively manage large genomic datasets. I used a similar skill set in my work with RNA sequence analysis, employing Base R and Python to enhance our understanding of RNA functions within biological contexts. In cancer genomics projects, I took on an integral role, leveraging these tools to better comprehend the genetic variations in cancer cells.
